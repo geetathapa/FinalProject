@@ -22,9 +22,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
-    private val myurl: String = "https://sameday.costco.com/store/costco/info?tab=delivery"
-    //private var mediaPlayer: MediaPlayer
-
+    private val myUrl= "https://sameday.costco.com/store/costco/info?tab=delivery"
+    private var noDeliveryTimeAvailable = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,8 +32,6 @@ class MainActivity : AppCompatActivity() {
         val textView: TextView = findViewById(R.id.textView)
         val myWebView: WebView = findViewById(R.id.webView)
         var mediaPlayer = MediaPlayer.create(this, R.raw.sound1)
-        //val timer = MyCounter(10000, 1000)
-
 
         // Enable java script in web view
         myWebView.settings.javaScriptEnabled = true
@@ -47,60 +44,70 @@ class MainActivity : AppCompatActivity() {
         myWebView.settings.allowContentAccess = true
         myWebView.settings.setAppCacheEnabled(true)
 
-        // load webview
-        myWebView.loadUrl(myurl)
+        // load webView
+        myWebView.loadUrl(myUrl)
 
-        // Set web view client
-        myWebView.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-                // Page loading started
-                toast("Page loading.")
-                progressBar.visibility = View.VISIBLE
-                super.onPageStarted(view, url, favicon)
-            }
+        Thread.sleep(19000)
+            // Set web view client
+            myWebView.webViewClient = object : WebViewClient() {
+                override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                    // Page loading started
+                    toast("Page loading.")
+                    progressBar.visibility = View.VISIBLE
+                    super.onPageStarted(view, url, favicon)
+                }
 
-            override fun onPageFinished(view: WebView, url: String) {
-                // Page loading finished
-                // Display the loaded page title in a toast message
-                toast("Page loaded: ${view.title}")
-                progressBar.visibility = View.GONE
-                super.onPageFinished(view, url)
+                override fun onPageFinished(view: WebView, url: String) {
+                    // Page loading finished
+                    // Display the loaded page title in a toast message
+                    toast("Page loaded: ${view.title}")
+                    progressBar.visibility = View.GONE
+                    super.onPageFinished(view, url)
 
-
-                // get html from myWebView and display time slot availability in textView
-                Thread.sleep(9000)
-                myWebView.evaluateJavascript(
-                    "(function() { return ('<html>'+document.getElementsByClassName('ReactModal__Content ReactModal__Content--after-open icModal')[0].innerText+'</html>'); })();",
-                    ValueCallback<String?> { html ->
-                        Log.d("HTML", html)
-
-                        if (html?.contains("Fast & Flexible") == true) {
-                            textView.setText ("Time slot available see below!")
-                            textView.setTextColor(Color.parseColor("#63982c"))
-                            textView.blink(50)
+                    //suspend the current thread for
+                    Thread.sleep(9000)
 
 
-                            // Play mediaPlayer for 20 secs
-                            val timer = object: CountDownTimer(20000, 1000) {
-                                override fun onTick(millisUntilFinished: Long) {
-                                    mediaPlayer.start()
+                    // get html from myWebView and display time slot availability in textView
+                    myWebView.evaluateJavascript(
+                        "(function() { return ('<html>'+document.getElementsByClassName('ReactModal__Content ReactModal__Content--after-open icModal')[0].innerText+'</html>'); })();",
+                        ValueCallback<String?> { html ->
+                            Log.d("HTML", html)
+
+                            if (html?.contains("Fast & Flexible") == true) {
+                                textView.setText("Time slot available see below!")
+                                textView.setTextColor(Color.parseColor("#63982c"))
+                                textView.blink(50)
+
+                                //noDeliveryTimeAvailable = false
+
+
+                                // Play mediaPlayer for 20 secs
+                                val timer = object : CountDownTimer(20000, 1000) {
+                                    override fun onTick(millisUntilFinished: Long) {
+                                        mediaPlayer.start()
+                                    }
+
+                                    override fun onFinish() {
+                                        mediaPlayer.stop()
+                                    }
                                 }
+                                timer.start()
 
-                                override fun onFinish() {
-                                    mediaPlayer.stop()
-                                }
+                            } else {
+                                textView.setText("Delivery times not available. ")
+                                textView.setTextColor(Color.RED)
+                                textView.blink(50)
+                                noDeliveryTimeAvailable = true
+                                myWebView.reload()
                             }
-                           timer.start()
+                        }
+                    )
 
-                        }
-                        else {
-                            textView.setText ("Delivery times not available. ")
-                            textView.setTextColor(Color.RED)
-                            textView.blink(50)
-                        }
-                    })
+
+                }
             }
-        }
+
     }
 
     // function to show toast message
@@ -108,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
-    override fun onBackPressed() {
+    /*override fun onBackPressed() {
         if (webView.canGoBack()) {
             // If web view have back history, then go to the web view back history
             webView.goBack()
@@ -123,7 +130,7 @@ class MainActivity : AppCompatActivity() {
         if (newProgress == 100) {
             val progress = "Page Loaded."
         }
-    }
+    }*/
 
     //function to blink text in textView
     fun View.blink(
@@ -143,3 +150,5 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
+
+
